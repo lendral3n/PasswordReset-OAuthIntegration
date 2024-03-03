@@ -130,7 +130,7 @@ func (service *userService) ForgotPassword(email string) (data *user.Core, token
 
 	token, err = middlewares.CreateResetPasswordToken(int(user.ID))
 	if err != nil {
-		return nil,  "", err
+		return nil, "", err
 	}
 
 	return user, token, nil
@@ -144,6 +144,17 @@ func (service *userService) ResetPassword(userId int, newPassword string) error 
 	}
 
 	err := service.userData.ResetPassword(userId, hashedNewPass)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// VerifyEmailLink implements user.UserServiceInterface.
+func (service *userService) VerifyEmailLink(userId int) error {
+	verification := true
+
+	err := service.userData.VerifyEmailLink(userId, verification)
 	if err != nil {
 		return err
 	}

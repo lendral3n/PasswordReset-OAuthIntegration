@@ -141,16 +141,16 @@ func (handler *UserHandler) ForgotPassword(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.WebResponse(err.Error(), nil))
 	}
 
-	errForgot := handler.email.SendResetPasswordEmail(user, token)
+	errForgot := handler.email.SendResetPasswordLink(user, token)
 	if errForgot != nil {
-		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error sending reset password email - " +errForgot.Error(), nil))
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error sending reset password email - "+errForgot.Error(), nil))
 	}
 	return c.JSON(http.StatusOK, responses.WebResponse("reset password email sent", nil))
 }
 
 func (handler *UserHandler) ResetPassword(c echo.Context) error {
 	token := c.QueryParam("token")
-	
+
 	userId, err := middlewares.ExtractUserIdFromResetPasswordToken(token)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, responses.WebResponse("error extracting user id from reset password token. "+err.Error(), nil))
@@ -160,7 +160,7 @@ func (handler *UserHandler) ResetPassword(c echo.Context) error {
 	errBind := c.Bind(&resetPasswordRequest)
 	if errBind != nil {
 		return c.JSON(http.StatusBadRequest, responses.WebResponse("error bind data. data not valid", nil))
-	}	
+	}
 
 	if resetPasswordRequest.ConfirmPassword != resetPasswordRequest.NewPassword {
 		return c.JSON(http.StatusBadRequest, responses.WebResponse("new password and confirm password do not match", nil))
@@ -174,3 +174,37 @@ func (handler *UserHandler) ResetPassword(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.WebResponse("success reset password", nil))
 }
 
+func (handler *UserHandler) SendVerifyEmail(c echo.Context) error {
+	var ForgotReq = ForgotPasswordRequest{}
+	errBind := c.Bind(&ForgotReq)
+	if errBind != nil {
+		return c.JSON(http.StatusBadRequest, responses.WebResponse("error bind data. data not valid", nil))
+	}
+
+	user, token, err := handler.userService.ForgotPassword(ForgotReq.Email)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse(err.Error(), nil))
+	}
+
+	errForgot := handler.email.SendVerificationLink(user, token)
+	if errForgot != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error sending reset password email - "+errForgot.Error(), nil))
+	}
+	return c.JSON(http.StatusOK, responses.WebResponse("verification email sent", nil))
+}
+
+func (handler *UserHandler) VerifyEmailLink(c echo.Context) error {
+	token := c.QueryParam("token")
+
+	userId, err := middlewares.ExtractUserIdFromResetPasswordToken(token)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.WebResponse("error extracting user id from reset password token. "+err.Error(), nil))
+	}
+
+	errReset := handler.userService.VerifyEmailLink(userId)
+	if errReset != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error reset password. "+errReset.Error(), nil))
+	}
+
+	return c.JSON(http.StatusOK, responses.WebResponse("success verification email", nil))
+}

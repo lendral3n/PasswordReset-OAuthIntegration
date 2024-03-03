@@ -31,4 +31,6 @@ func InitRouter(db *gorm.DB, e *echo.Echo) {
 	e.PUT("/change-password", userHandlerAPI.ChangePassword, middlewares.JWTMiddleware())
 	e.POST("forgot-password", userHandlerAPI.ForgotPassword)
 	e.PATCH("reset-password", userHandlerAPI.ResetPassword)
+	e.POST("verification", userHandlerAPI.SendVerifyEmail)
+	e.PATCH("verification", userHandlerAPI.VerifyEmailLink)
 }
