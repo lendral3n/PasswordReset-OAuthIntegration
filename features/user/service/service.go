@@ -138,5 +138,14 @@ func (service *userService) ForgotPassword(email string) (data *user.Core, token
 
 // ResetPassword implements user.UserServiceInterface.
 func (service *userService) ResetPassword(userId int, newPassword string) error {
-	panic("unimplemented")
+	hashedNewPass, errHash := service.hashService.HashPassword(newPassword)
+	if errHash != nil {
+		return errors.New("error hash password")
+	}
+
+	err := service.userData.ResetPassword(userId, hashedNewPass)
+	if err != nil {
+		return err
+	}
+	return nil
 }

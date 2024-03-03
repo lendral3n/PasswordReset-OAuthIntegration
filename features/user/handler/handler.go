@@ -147,3 +147,30 @@ func (handler *UserHandler) ForgotPassword(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, responses.WebResponse("reset password email sent", nil))
 }
+
+func (handler *UserHandler) ResetPassword(c echo.Context) error {
+	token := c.QueryParam("token")
+	
+	userId, err := middlewares.ExtractUserIdFromResetPasswordToken(token)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, responses.WebResponse("error extracting user id from reset password token. "+err.Error(), nil))
+	}
+
+	var resetPasswordRequest = ResetPasswordRequest{}
+	errBind := c.Bind(&resetPasswordRequest)
+	if errBind != nil {
+		return c.JSON(http.StatusBadRequest, responses.WebResponse("error bind data. data not valid", nil))
+	}	
+
+	if resetPasswordRequest.ConfirmPassword != resetPasswordRequest.NewPassword {
+		return c.JSON(http.StatusBadRequest, responses.WebResponse("new password and confirm password do not match", nil))
+	}
+
+	errReset := handler.userService.ResetPassword(userId, resetPasswordRequest.NewPassword)
+	if errReset != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error reset password. "+errReset.Error(), nil))
+	}
+
+	return c.JSON(http.StatusOK, responses.WebResponse("success reset password", nil))
+}
+

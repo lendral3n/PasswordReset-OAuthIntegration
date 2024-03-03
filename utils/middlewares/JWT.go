@@ -70,3 +70,27 @@ func ExtractTokenUserId(e echo.Context) int {
 	}
 	return 0
 }
+
+func ExtractUserIdFromResetPasswordToken(token string) (int, error) {
+	tokenJWT, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		return []byte(config.JWT_SECRET), nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	if claims, ok := tokenJWT.Claims.(jwt.MapClaims); ok && tokenJWT.Valid {
+		payload, ok := claims["sub"].(map[string]interface{})
+		if !ok {
+			return 0, fmt.Errorf("invalid payload in token")
+		}
+
+		userId, isValidUserId := payload["userId"].(float64)
+		if !isValidUserId {
+			return 0, fmt.Errorf("invalid user id in token")
+		}
+		return int(userId), nil
+	}
+
+	return 0, fmt.Errorf("invalid token")
+}
