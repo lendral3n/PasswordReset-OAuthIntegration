@@ -13,6 +13,7 @@ type User struct {
 	Email        string `gorm:"unique"`
 	Password     string `gorm:"not null"`
 	PhotoProfile string
+	Verified     bool
 }
 
 func CoreToModel(input user.Core) User {

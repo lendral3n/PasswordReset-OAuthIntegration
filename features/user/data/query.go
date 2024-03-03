@@ -99,7 +99,7 @@ func (repo *userQuery) ChangePassword(userId int, oldPassword, newPassword strin
 
 // ResetPassword implements user.UserDataInterface.
 func (repo *userQuery) ResetPassword(userId int, newPassword string) error {
-	var userGorm User 
+	var userGorm User
 	userGorm.Password = newPassword
 
 	tx := repo.db.Model(&User{}).Where("id = ?", userId).Updates(&userGorm)
@@ -120,4 +120,18 @@ func (repo *userQuery) SelectByEmail(email string) (*user.Core, error) {
 
 	result := userGorm.ModelToCore()
 	return &result, nil
+}
+
+
+// VerifyEmailLink implements user.UserDataInterface.
+func (repo *userQuery) VerifyEmailLink(userId int, verification bool) error {
+	var userGorm User
+	userGorm.Verified = verification
+
+	tx := repo.db.Model(&User{}).Where("id = ?", userId).Updates(&userGorm)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
 }

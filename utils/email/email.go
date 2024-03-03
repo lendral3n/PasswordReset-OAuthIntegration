@@ -27,7 +27,8 @@ type emailService struct {
 }
 
 type EmailInterface interface {
-	SendResetPasswordEmail(user *user.Core, token string) error
+	SendResetPasswordLink(user *user.Core, token string) error
+	SendVerificationLink(user *user.Core, token string) error
 }
 
 func New() EmailInterface {
@@ -43,17 +44,53 @@ func New() EmailInterface {
 	}
 }
 
-func (e *emailService) SendResetPasswordEmail(user *user.Core, token string) error {
-	t, err := template.ParseGlob("utils/templates/*.html")
+func (e *emailService) SendResetPasswordLink(user *user.Core, token string) error {
+	t, err := template.ParseGlob("utils/templates/resetpasswordlink.html")
 	if err != nil {
 		return err
 	}
 	
 	to := user.Email
 	data := &emailData{
-		URL:     e.url + "?token=" + token,
+		URL:     e.url + "/reset-password?token=" + token,
 		Name:    user.Name,
 		Subject: "Reset Password",
+	}
+
+	var body bytes.Buffer
+	if err := t.Execute(&body, data); err != nil {
+		return err
+	}
+
+	m := gomail.NewMessage()
+
+	m.SetHeader("From", e.from)
+	m.SetHeader("To", to)
+	m.SetHeader("Subject", data.Subject)
+	m.SetBody("text/html", body.String())
+	m.AddAlternative("text/plain", html2text.HTML2Text(body.String()))
+
+	d := gomail.NewDialer(e.host, e.port, e.user, e.password)
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+
+	// Send Email
+	if err := d.DialAndSend(m); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *emailService) SendVerificationLink(user *user.Core, token string) error {
+	t, err := template.ParseGlob("utils/templates/verifiedlink.html")
+	if err != nil {
+		return err
+	}
+	
+	to := user.Email
+	data := &emailData{
+		URL:     e.url + "/verification?token=" + token,
+		Name:    user.Name,
+		Subject: "Email Verification",
 	}
 
 	var body bytes.Buffer
