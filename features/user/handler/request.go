@@ -20,11 +20,12 @@ type ChangePasswordRequest struct {
 }
 
 type ForgotPasswordRequest struct {
-	Email        string `json:"email" form:"email"`
+	Email string `json:"email" form:"email"`
 }
 
 type ResetPasswordRequest struct {
-	NewPassword string `json:"new_password" form:"new_password"`
+	NewPassword     string `json:"new_password"`
+	ConfirmPassword string `json:"confirm_password"`
 }
 
 func RequestToCore(input UserRequest) user.Core {
