@@ -19,6 +19,14 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"new_password" form:"new_password"`
 }
 
+type ForgotPasswordRequest struct {
+	Email        string `json:"email" form:"email"`
+}
+
+type ResetPasswordRequest struct {
+	NewPassword string `json:"new_password" form:"new_password"`
+}
+
 func RequestToCore(input UserRequest) user.Core {
 	return user.Core{
 		Name:         input.Name,

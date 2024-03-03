@@ -1,19 +1,19 @@
 package data
 
 import (
-	"errors"
 	"emailnotifl3n/features/user"
+	"errors"
 
 	"gorm.io/gorm"
 )
 
 type userQuery struct {
-	db    *gorm.DB
+	db *gorm.DB
 }
 
 func New(db *gorm.DB) user.UserDataInterface {
 	return &userQuery{
-		db:    db,
+		db: db,
 	}
 }
 
@@ -95,4 +95,29 @@ func (repo *userQuery) ChangePassword(userId int, oldPassword, newPassword strin
 		return errors.New("error record not found ")
 	}
 	return nil
+}
+
+// ResetPassword implements user.UserDataInterface.
+func (repo *userQuery) ResetPassword(userId int, newPassword string) error {
+	var userGorm User 
+	userGorm.Password = newPassword
+
+	tx := repo.db.Model(&User{}).Where("id = ?", userId).Updates(&userGorm)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+// SelectByEmail implements user.UserDataInterface.
+func (repo *userQuery) SelectByEmail(email string) (*user.Core, error) {
+	var userGorm User
+	tx := repo.db.Where(" email = ?", email).First(&userGorm)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	result := userGorm.ModelToCore()
+	return &result, nil
 }

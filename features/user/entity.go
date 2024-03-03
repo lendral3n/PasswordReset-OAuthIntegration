@@ -28,6 +28,8 @@ type UserDataInterface interface {
 	Delete(userId int) error
 	Login(email, password string) (data *Core, err error)
 	ChangePassword(userId int, oldPassword, newPassword string) error
+	SelectByEmail(email string) (*Core, error) 
+	ResetPassword(userId int, newPassword string) error    
 }
 
 // interface untuk Service Layer
@@ -37,5 +39,7 @@ type UserServiceInterface interface {
 	Update(userId int, input CoreUpdate) error
 	Delete(userId int) error
 	Login(email, password string) (data *Core, token string, err error)
-	ChangePassword(userId int, oldPassword, newPassword string) error
+	ChangePassword(userId int, oldPassword, newPassword string) error   
+	ForgotPassword(email string) (data *Core, token string, err error)
+	ResetPassword(userId int, newPassword string) error      
 }

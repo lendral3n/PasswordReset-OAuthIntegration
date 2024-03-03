@@ -2,9 +2,10 @@ package handler
 
 import (
 	"emailnotifl3n/features/user"
-	"emailnotifl3n/utils/upload"
+	"emailnotifl3n/utils/email"
 	"emailnotifl3n/utils/middlewares"
 	"emailnotifl3n/utils/responses"
+	"emailnotifl3n/utils/upload"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -12,13 +13,15 @@ import (
 
 type UserHandler struct {
 	userService user.UserServiceInterface
-	s3         upload.S3UploaderInterface
+	s3          upload.S3UploaderInterface
+	email       email.EmailInterface
 }
 
-func New(service user.UserServiceInterface, s3Uploader upload.S3UploaderInterface) *UserHandler {
+func New(service user.UserServiceInterface, s3Uploader upload.S3UploaderInterface, email email.EmailInterface) *UserHandler {
 	return &UserHandler{
 		userService: service,
-		s3:         s3Uploader,
+		s3:          s3Uploader,
+		email:       email,
 	}
 }
 
@@ -124,4 +127,23 @@ func (handler *UserHandler) ChangePassword(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, responses.WebResponse("success change password", nil))
+}
+
+func (handler *UserHandler) ForgotPassword(c echo.Context) error {
+	var ForgotReq = ForgotPasswordRequest{}
+	errBind := c.Bind(&ForgotReq)
+	if errBind != nil {
+		return c.JSON(http.StatusBadRequest, responses.WebResponse("error bind data. data not valid", nil))
+	}
+
+	user, token, err := handler.userService.ForgotPassword(ForgotReq.Email)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse(err.Error(), nil))
+	}
+
+	errForgot := handler.email.SendResetPasswordEmail(user, token)
+	if errForgot != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error sending reset password email - " +errForgot.Error(), nil))
+	}
+	return c.JSON(http.StatusOK, responses.WebResponse("reset password email sent", nil))
 }
