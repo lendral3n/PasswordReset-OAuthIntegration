@@ -1,10 +1,10 @@
 package service
 
 import (
-	"errors"
 	"emailnotifl3n/features/user"
 	"emailnotifl3n/utils/encrypts"
 	"emailnotifl3n/utils/middlewares"
+	"errors"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -56,7 +56,7 @@ func (service *userService) Update(userId int, input user.CoreUpdate) error {
 		return errValidate
 	}
 	if userId <= 0 {
-		return errors.New("invalid id.")
+		return errors.New("invalid id")
 	}
 
 	err := service.userData.Update(userId, input)
@@ -75,25 +75,26 @@ func (service *userService) Delete(userId int) error {
 // Login implements user.UserServiceInterface.
 func (service *userService) Login(email string, password string) (data *user.Core, token string, err error) {
 	if email == "" && password == "" {
-		return nil, "", errors.New("email dan password wajib diisi.")
+		return nil, "", errors.New("email dan password wajib diisi")
 	}
 	if email == "" {
-		return nil, "", errors.New("email wajib diisi.")
+		return nil, "", errors.New("email wajib diisi")
 	}
 	if password == "" {
-		return nil, "", errors.New("password wajib diisi.")
+		return nil, "", errors.New("password wajib diisi")
 	}
 
 	data, err = service.userData.Login(email, password)
 	if err != nil {
 		return nil, "", err
 	}
+
 	isValid := service.hashService.CheckPasswordHash(data.Password, password)
 	if !isValid {
-		return nil, "", errors.New("password tidak sesuai.")
+		return nil, "", errors.New("password tidak sesuai")
 	}
 
-	token, errJwt := middlewares.CreateToken(int(data.ID))
+	token, errJwt := middlewares.CreateTokenLogin(int(data.ID))
 	if errJwt != nil {
 		return nil, "", errJwt
 	}
@@ -118,4 +119,24 @@ func (service *userService) ChangePassword(userId int, oldPassword, newPassword 
 	err := service.userData.ChangePassword(userId, oldPassword, hashedNewPass)
 	return err
 
+}
+
+// ForgotPassword implements user.UserServiceInterface.
+func (service *userService) ForgotPassword(email string) (data *user.Core, token string, err error) {
+	user, err := service.userData.SelectByEmail(email)
+	if err != nil {
+		return nil, "", err
+	}
+
+	token, err = middlewares.CreateResetPasswordToken(int(user.ID))
+	if err != nil {
+		return nil,  "", err
+	}
+
+	return user, token, nil
+}
+
+// ResetPassword implements user.UserServiceInterface.
+func (service *userService) ResetPassword(userId int, newPassword string) error {
+	panic("unimplemented")
 }

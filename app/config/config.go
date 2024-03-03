@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	JWT_SECRET string
-	RDS_URL string
-	AWS_ACCESS_KEY_ID string
+	JWT_SECRET            string
+	RDS_URL               string
+	AWS_ACCESS_KEY_ID     string
 	AWS_SECRET_ACCESS_KEY string
-	AWS_REGION string
+	AWS_REGION            string
 )
 
 type AppConfig struct {
@@ -22,6 +22,12 @@ type AppConfig struct {
 	DB_HOSTNAME string
 	DB_PORT     int
 	DB_NAME     string
+	SMTP_HOST   string
+	SMTP_PORT   int
+	SMTP_USER   string
+	SMTP_PASS   string
+	PASSWD_URL  string
+	EMAIL_FROM string
 }
 
 func InitConfig() *AppConfig {
@@ -73,6 +79,31 @@ func ReadEnv() *AppConfig {
 		AWS_REGION = val
 		isRead = false
 	}
+	if val, found := os.LookupEnv("SMTPHOST"); found {
+		app.SMTP_HOST = val
+		isRead = false
+	}
+	if val, found := os.LookupEnv("SMTPPORT"); found {
+		cnv, _ := strconv.Atoi(val)
+		app.SMTP_PORT = cnv
+		isRead = false
+	}
+	if val, found := os.LookupEnv("SMTPUSER"); found {
+		app.SMTP_USER = val
+		isRead = false
+	}
+	if val, found := os.LookupEnv("SMTPPASS"); found {
+		app.SMTP_PASS = val
+		isRead = false
+	}
+	if val, found := os.LookupEnv("PASSWDURL"); found {
+		app.PASSWD_URL = val
+		isRead = false
+	}
+	if val, found := os.LookupEnv("EMAILFROM"); found {
+		app.EMAIL_FROM = val
+		isRead = false
+	}
 
 	if isRead {
 		viper.AddConfigPath(".")
@@ -90,12 +121,17 @@ func ReadEnv() *AppConfig {
 		AWS_REGION = viper.GetString("AWSREGION")
 		RDS_URL = viper.GetString("RDSURL")
 		JWT_SECRET = viper.GetString("JWTSECRET")
+		app.SMTP_HOST = viper.GetString("SMTPHOST")
+		app.SMTP_PORT, _ = strconv.Atoi(viper.Get("SMTPPORT").(string))
+		app.SMTP_USER = viper.GetString("SMTPUSER")
+		app.SMTP_PASS = viper.GetString("SMTPPASS")
+		app.PASSWD_URL = viper.GetString("PASSWDURL")
+		app.EMAIL_FROM = viper.GetString("EMAILFROM")
 		app.DB_USERNAME = viper.Get("DBUSER").(string)
 		app.DB_PASSWORD = viper.Get("DBPASS").(string)
 		app.DB_HOSTNAME = viper.Get("DBHOST").(string)
 		app.DB_PORT, _ = strconv.Atoi(viper.Get("DBPORT").(string))
 		app.DB_NAME = viper.Get("DBNAME").(string)
 	}
-
 	return &app
 }

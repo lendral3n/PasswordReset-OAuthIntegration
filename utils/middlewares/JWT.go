@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"emailnotifl3n/app/config"
+	"fmt"
 	"strings"
 	"time"
 
@@ -18,14 +19,36 @@ func JWTMiddleware() echo.MiddlewareFunc {
 }
 
 // Generate token jwt
-func CreateToken(userId int) (string, error) {
+func CreateTokenLogin(userId int) (string, error) {
 	claims := jwt.MapClaims{}
 	claims["authorized"] = true
 	claims["userId"] = userId
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix() //Token expires after 1 hour
+	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(config.JWT_SECRET))
+}
 
+func CreateResetPasswordToken(userId int) (string, error) {
+	payload := map[string]interface{}{
+		"userId":        userId,
+		"resetPassword": true,
+	}
+
+	now := time.Now().UTC()
+
+	claims := jwt.MapClaims{
+		"sub": payload,
+		"exp": now.Add(time.Duration(time.Minute * 15)).Unix(),
+		"iat": now.Unix(),
+		"nbf": now.Unix(),
+	}
+
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(config.JWT_SECRET))
+	if err != nil {
+		return "", fmt.Errorf("create: sign token: %w", err)
+	}
+
+	return token, nil
 }
 
 // extract token jwt
