@@ -35,8 +35,10 @@ type UserDataInterface interface {
 	VerifyEmailLink(userId int, verification bool) error
 	CreateCode(email, code string) error
 	CheckCode(email string) (bool, error)
-	VerifyEmailCode(email string, code string) error
-	ResetPasswordCode(newPassword string) error
+	DeleteCode(email string)error
+	VerifyCode(email, code string) error
+	VerifyEmailCode(email string, verification bool) error
+	ResetPasswordCode(email, newPassword string) error
 }
 
 // interface untuk Service Layer
@@ -52,5 +54,5 @@ type UserServiceInterface interface {
 	VerifyEmailLink(userId int) error
 	RequestCode(email, code string) (data *Core, err error)
 	VerifyEmailCode(email string, code string) error
-	ResetPasswordCode(newPassword string) error
+	ResetPasswordCode(email, newPassword, code string) error
 }

@@ -34,5 +34,8 @@ func InitRouter(db *gorm.DB, e *echo.Echo, rds cache.Redis) {
 	e.PATCH("reset-password", userHandlerAPI.ResetPassword)
 	e.POST("verification", userHandlerAPI.SendVerifyEmail)
 	e.PATCH("verification", userHandlerAPI.VerifyEmailLink)
-	e.POST("request-code", userHandlerAPI.RequestCode)
+	e.POST("request-code-password", userHandlerAPI.RequestCodePassword)
+	e.PATCH("reset-password-code", userHandlerAPI.ResetPasswordCode)
+	e.POST("request-code-verify", userHandlerAPI.RequestCodeVerify)
+	e.PATCH("verification-email", userHandlerAPI.VerifyEmailCode)
 }

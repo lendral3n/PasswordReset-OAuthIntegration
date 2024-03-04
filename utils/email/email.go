@@ -29,7 +29,8 @@ type emailService struct {
 type EmailInterface interface {
 	SendResetPasswordLink(user *user.Core, token string) error
 	SendVerificationLink(user *user.Core, token string) error
-	SendCodeResetPassword(user *user.Core, code string) error 
+	SendCodeResetPassword(user *user.Core, code string) error
+	SendCodeResetEmail(user *user.Core, code string) error
 }
 
 func New() EmailInterface {
@@ -50,7 +51,7 @@ func (e *emailService) SendResetPasswordLink(user *user.Core, token string) erro
 	if err != nil {
 		return err
 	}
-	
+
 	to := user.Email
 	data := &emailData{
 		URL:     e.url + "/reset-password?token=" + token,
@@ -86,7 +87,7 @@ func (e *emailService) SendVerificationLink(user *user.Core, token string) error
 	if err != nil {
 		return err
 	}
-	
+
 	to := user.Email
 	data := &emailData{
 		URL:     e.url + "/verification?token=" + token,
@@ -122,7 +123,7 @@ func (e *emailService) SendCodeResetPassword(user *user.Core, code string) error
 	if err != nil {
 		return err
 	}
-	
+
 	data := &emailData{
 		URL:     code,
 		Name:    user.Name,
@@ -152,3 +153,39 @@ func (e *emailService) SendCodeResetPassword(user *user.Core, code string) error
 	return nil
 }
 
+
+// SendCodeResetEmail implements EmailInterface.
+func (e *emailService) SendCodeResetEmail(user *user.Core, code string) error {
+	t, err := template.ParseGlob("utils/templates/resetpasswordcode.html")
+	if err != nil {
+		return err
+	}
+
+	data := &emailData{
+		URL:     code,
+		Name:    user.Name,
+		Subject: "Verified Email Code",
+	}
+
+	var body bytes.Buffer
+	if err := t.Execute(&body, data); err != nil {
+		return err
+	}
+
+	m := gomail.NewMessage()
+
+	m.SetHeader("From", e.from)
+	m.SetHeader("To", user.Email)
+	m.SetHeader("Subject", data.Subject)
+	m.SetBody("text/html", body.String())
+	m.AddAlternative("text/plain", html2text.HTML2Text(body.String()))
+
+	d := gomail.NewDialer(e.host, e.port, e.user, e.password)
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+
+	// Send Email
+	if err := d.DialAndSend(m); err != nil {
+		return err
+	}
+	return nil
+}

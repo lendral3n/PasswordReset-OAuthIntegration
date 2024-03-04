@@ -209,7 +209,7 @@ func (handler *UserHandler) VerifyEmailLink(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.WebResponse("success verification email", nil))
 }
 
-func (handler *UserHandler) RequestCode(c echo.Context) error {
+func (handler *UserHandler) RequestCodePassword(c echo.Context) error {
 	var reqData = CodeRequest{}
 	errBind := c.Bind(&reqData)
 	if errBind != nil {
@@ -227,4 +227,62 @@ func (handler *UserHandler) RequestCode(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error sending code - "+errForgot.Error(), nil))
 	}
 	return c.JSON(http.StatusOK, responses.WebResponse("code email sent", nil))
+}
+
+func (handler *UserHandler) RequestCodeVerify(c echo.Context) error {
+	var reqData = CodeRequest{}
+	errBind := c.Bind(&reqData)
+	if errBind != nil {
+		return c.JSON(http.StatusBadRequest, responses.WebResponse("error bind data, data not valid", nil))
+	}
+
+	userCore := CoderequestToCore(reqData)
+	user, err := handler.userService.RequestCode(userCore.Email, userCore.Code)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse(err.Error(), nil))
+	}
+
+	errForgot := handler.email.SendCodeResetEmail(user, userCore.Code)
+	if errForgot != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error sending code - "+errForgot.Error(), nil))
+	}
+	return c.JSON(http.StatusOK, responses.WebResponse("code email sent", nil))
+}
+
+func (handler *UserHandler) ResetPasswordCode(c echo.Context) error {
+	code := c.QueryParam("code")
+
+	var resetPasswordRequest = ResetPasswordRequestCode{}
+	errBind := c.Bind(&resetPasswordRequest)
+	if errBind != nil {
+		return c.JSON(http.StatusBadRequest, responses.WebResponse("error bind data. data not valid", nil))
+	}
+
+	if resetPasswordRequest.ConfirmPassword != resetPasswordRequest.NewPassword {
+		return c.JSON(http.StatusBadRequest, responses.WebResponse("new password and confirm password do not match", nil))
+	}
+
+	errReset := handler.userService.ResetPasswordCode(resetPasswordRequest.Email, resetPasswordRequest.NewPassword, code)
+	if errReset != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error reset password. "+errReset.Error(), nil))
+	}
+
+	return c.JSON(http.StatusOK, responses.WebResponse("success reset password", nil))
+}
+
+func (handler *UserHandler) VerifyEmailCode(c echo.Context) error {
+	code := c.QueryParam("code")
+
+	var verifyReq = ForgotPasswordRequest{}
+	errBind := c.Bind(&verifyReq)
+	if errBind != nil {
+		return c.JSON(http.StatusBadRequest, responses.WebResponse("error bind data. data not valid", nil))
+	}
+
+	errVerify := handler.userService.VerifyEmailCode(verifyReq.Email, code)
+	if errVerify != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse(errVerify.Error(), nil))
+	}
+
+	return c.JSON(http.StatusOK, responses.WebResponse("success verification email", nil))
 }

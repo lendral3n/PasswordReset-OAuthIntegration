@@ -143,17 +143,23 @@ func (repo *userQuery) VerifyEmailLink(userId int, verification bool) error {
 	return nil
 }
 
-// CreateCode implements user.UserDataInterface.
+// RequestCode implements user.UserDataInterface.
 func (repo *userQuery) CreateCode(email, code string) error {
 	ctx := context.Background()
-	
+	err := repo.redis.Set(ctx, email, code)
+	return err
+}
+
+// DeleteCode implements user.UserDataInterface.
+func (repo *userQuery) DeleteCode(email string) error {
+	ctx := context.Background()
+
 	err := repo.redis.Delete(ctx, email)
 	if err != nil {
 		return err
 	}
-	
-	err = repo.redis.Set(ctx, email, code)
-	return err
+
+	return nil
 }
 
 // CheckCode implements user.UserDataInterface.
@@ -170,11 +176,43 @@ func (repo *userQuery) CheckCode(email string) (bool, error) {
 }
 
 // VerifyEmailCode implements user.UserDataInterface.
-func (repo *userQuery) VerifyEmailCode(email string, code string) error {
-	panic("unimplemented")
+func (repo *userQuery) VerifyCode(email string, code string) error {
+	ctx := context.Background()
+	storedCode, err := repo.redis.Get(ctx, email)
+	if err != nil {
+		if err == redis.Nil {
+			return errors.New("kode tidak ditemukan")
+		}
+		return err
+	}
+	if storedCode != code {
+		return errors.New("kode anda salah")
+	}
+
+	return nil
 }
 
 // ResetPasswordCode implements user.UserDataInterface.
-func (repo userQuery) ResetPasswordCode(newPassword string) error {
-	panic("unimplemented")
+func (repo userQuery) ResetPasswordCode(email, newPassword string) error {
+	var userGorm User
+	userGorm.Password = newPassword
+
+	tx := repo.db.Model(&User{}).Where("email = ?", email).Updates(&userGorm)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+// VerifyEmailCode implements user.UserDataInterface.
+func (repo *userQuery) VerifyEmailCode(email string, verification bool) error {
+	var userGorm User
+	userGorm.Verified = verification
+
+	tx := repo.db.Model(&User{}).Where("email = ?", email).Updates(&userGorm)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
 }
