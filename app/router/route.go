@@ -1,6 +1,7 @@
 package router
 
 import (
+	"emailnotifl3n/app/cache"
 	ud "emailnotifl3n/features/user/data"
 	uh "emailnotifl3n/features/user/handler"
 	us "emailnotifl3n/features/user/service"
@@ -13,12 +14,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func InitRouter(db *gorm.DB, e *echo.Echo) {
+func InitRouter(db *gorm.DB, e *echo.Echo, rds cache.Redis) {
 	hash := encrypts.New()
 	s3Uploader := upload.New()
 	email := email.New()
 
-	userData := ud.New(db)
+	userData := ud.New(db, rds)
 	userService := us.New(userData, hash)
 	userHandlerAPI := uh.New(userService, s3Uploader, email)
 
@@ -33,4 +34,5 @@ func InitRouter(db *gorm.DB, e *echo.Echo) {
 	e.PATCH("reset-password", userHandlerAPI.ResetPassword)
 	e.POST("verification", userHandlerAPI.SendVerifyEmail)
 	e.PATCH("verification", userHandlerAPI.VerifyEmailLink)
+	e.POST("request-code", userHandlerAPI.RequestCode)
 }

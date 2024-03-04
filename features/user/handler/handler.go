@@ -208,3 +208,24 @@ func (handler *UserHandler) VerifyEmailLink(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, responses.WebResponse("success verification email", nil))
 }
+
+func (handler *UserHandler) RequestCode(c echo.Context) error {
+	var reqData = CodeRequest{}
+	errBind := c.Bind(&reqData)
+	if errBind != nil {
+		return c.JSON(http.StatusBadRequest, responses.WebResponse("error bind data, data not valid", nil))
+	}
+
+	userCore := CoderequestToCore(reqData)
+	user, err := handler.userService.RequestCode(userCore.Email, userCore.Code)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse(err.Error(), nil))
+	}
+
+	errForgot := handler.email.SendCodeReset(user, userCore.Code)
+	if errForgot != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error sending code - "+errForgot.Error(), nil))
+	}
+	return c.JSON(http.StatusOK, responses.WebResponse("code email sent", nil))
+
+}
