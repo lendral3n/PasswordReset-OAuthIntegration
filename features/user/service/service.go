@@ -5,6 +5,9 @@ import (
 	"emailnotifl3n/utils/encrypts"
 	"emailnotifl3n/utils/middlewares"
 	"errors"
+	"fmt"
+	"sync"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -13,6 +16,7 @@ type userService struct {
 	userData    user.UserDataInterface
 	hashService encrypts.HashInterface
 	validate    *validator.Validate
+	m           sync.Map
 }
 
 // dependency injection
@@ -143,7 +147,7 @@ func (service *userService) ResetPassword(userId int, newPassword string) error 
 		return errors.New("error hash password")
 	}
 
-	err := service.userData.ResetPassword(userId, hashedNewPass)
+	err := service.userData.ResetPasswordLink(userId, hashedNewPass)
 	if err != nil {
 		return err
 	}
@@ -159,4 +163,46 @@ func (service *userService) VerifyEmailLink(userId int) error {
 		return err
 	}
 	return nil
+}
+
+// RequestCode implements user.UserServiceInterface.
+func (service *userService) RequestCode(email string, code string) (data *user.Core, err error) {
+	if email == "" {
+		return nil, errors.New("email harus di isi")
+	}
+
+	mail, err := service.userData.SelectByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+
+	isValid, _ := service.userData.CheckCode(email)
+	if isValid {
+		if creationTime, ok := service.m.Load(email); ok {
+			elapsed := time.Since(creationTime.(time.Time))
+			if elapsed < 1*time.Minute {
+				remaining := 1*time.Minute - elapsed
+				return nil, fmt.Errorf("coba lagi minta kode dalam %.0f detik", remaining.Seconds())
+			}
+		}
+	}
+	if !isValid {
+		err = service.userData.CreateCode(email, code)
+		if err != nil {
+			return nil, err
+		}
+		service.m.Store(email, time.Now())
+		return mail, nil
+	}
+	return nil, errors.New("coba lagi dalam beberapa menit lagi")
+}
+
+// ResetPasswordCode implements user.UserServiceInterface.
+func (*userService) ResetPasswordCode(newPassword string) error {
+	panic("unimplemented")
+}
+
+// VerifyEmailCode implements user.UserServiceInterface.
+func (*userService) VerifyEmailCode(email string, code string) error {
+	panic("unimplemented")
 }

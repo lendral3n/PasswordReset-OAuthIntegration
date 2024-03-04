@@ -1,19 +1,24 @@
 package data
 
 import (
+	"context"
+	"emailnotifl3n/app/cache"
 	"emailnotifl3n/features/user"
 	"errors"
 
+	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
 type userQuery struct {
-	db *gorm.DB
+	db    *gorm.DB
+	redis cache.Redis
 }
 
-func New(db *gorm.DB) user.UserDataInterface {
+func New(db *gorm.DB, redis cache.Redis) user.UserDataInterface {
 	return &userQuery{
-		db: db,
+		db:    db,
+		redis: redis,
 	}
 }
 
@@ -98,7 +103,7 @@ func (repo *userQuery) ChangePassword(userId int, oldPassword, newPassword strin
 }
 
 // ResetPassword implements user.UserDataInterface.
-func (repo *userQuery) ResetPassword(userId int, newPassword string) error {
+func (repo *userQuery) ResetPasswordLink(userId int, newPassword string) error {
 	var userGorm User
 	userGorm.Password = newPassword
 
@@ -115,13 +120,15 @@ func (repo *userQuery) SelectByEmail(email string) (*user.Core, error) {
 	var userGorm User
 	tx := repo.db.Where(" email = ?", email).First(&userGorm)
 	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, errors.New("email tidak ada")
+		}
 		return nil, tx.Error
 	}
 
 	result := userGorm.ModelToCore()
 	return &result, nil
 }
-
 
 // VerifyEmailLink implements user.UserDataInterface.
 func (repo *userQuery) VerifyEmailLink(userId int, verification bool) error {
@@ -134,4 +141,36 @@ func (repo *userQuery) VerifyEmailLink(userId int, verification bool) error {
 	}
 
 	return nil
+}
+
+// RequestCode implements user.UserDataInterface.
+func (repo *userQuery) CreateCode(email, code string) error {
+	ctx := context.Background()
+	err := repo.redis.Set(ctx, email, code)
+	return err
+}
+
+// CheckCode implements user.UserDataInterface.
+func (repo *userQuery) CheckCode(email string) (bool, error) {
+	ctx := context.Background()
+
+	// Mengambil nilai kode dari Redis berdasarkan email
+	_, err := repo.redis.Get(ctx, email)
+	if err != nil {
+		if err == redis.Nil {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// VerifyEmailCode implements user.UserDataInterface.
+func (repo *userQuery) VerifyEmailCode(email string, code string) error {
+	panic("unimplemented")
+}
+
+// ResetPasswordCode implements user.UserDataInterface.
+func (repo userQuery) ResetPasswordCode(newPassword string) error {
+	panic("unimplemented")
 }

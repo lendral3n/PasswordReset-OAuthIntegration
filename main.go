@@ -1,6 +1,7 @@
 package main
 
 import (
+	"emailnotifl3n/app/cache"
 	"emailnotifl3n/app/config"
 	"emailnotifl3n/app/database"
 	"emailnotifl3n/app/router"
@@ -12,6 +13,7 @@ import (
 func main() {
 	cfg := config.InitConfig()
 	dbSql := database.InitDBPostgres(cfg)
+	cacheRds := cache.InitRedis()
 
 	e := echo.New()
 	e.Use(middleware.CORS())
@@ -21,7 +23,7 @@ func main() {
 		Format: `[${time_rfc3339}] ${status} ${method} ${host}${path} ${latency_human}` + "\n",
 	}))
 
-	router.InitRouter(dbSql, e)
+	router.InitRouter(dbSql, e, cacheRds)
 	//start server and port
 	e.Logger.Fatal(e.Start(":8000"))
 }

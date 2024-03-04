@@ -11,6 +11,7 @@ type Core struct {
 	Password     string `validate:"required"`
 	PhotoProfile string
 	Verified     bool
+	Code string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -30,8 +31,12 @@ type UserDataInterface interface {
 	Login(email, password string) (data *Core, err error)
 	ChangePassword(userId int, oldPassword, newPassword string) error
 	SelectByEmail(email string) (*Core, error)
-	ResetPassword(userId int, newPassword string) error
+	ResetPasswordLink(userId int, newPassword string) error
 	VerifyEmailLink(userId int, verification bool) error
+	CreateCode(email, code string) error
+	CheckCode(email string) (bool, error)
+	VerifyEmailCode(email string, code string) error
+	ResetPasswordCode(newPassword string) error
 }
 
 // interface untuk Service Layer
@@ -45,4 +50,7 @@ type UserServiceInterface interface {
 	ForgotPassword(email string) (data *Core, token string, err error)
 	ResetPassword(userId int, newPassword string) error
 	VerifyEmailLink(userId int) error
+	RequestCode(email, code string) (data *Core, err error)
+	VerifyEmailCode(email string, code string) error
+	ResetPasswordCode(newPassword string) error
 }
