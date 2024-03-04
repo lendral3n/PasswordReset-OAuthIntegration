@@ -222,10 +222,9 @@ func (handler *UserHandler) RequestCode(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, responses.WebResponse(err.Error(), nil))
 	}
 
-	errForgot := handler.email.SendCodeReset(user, userCore.Code)
+	errForgot := handler.email.SendCodeResetPassword(user, userCore.Code)
 	if errForgot != nil {
 		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error sending code - "+errForgot.Error(), nil))
 	}
 	return c.JSON(http.StatusOK, responses.WebResponse("code email sent", nil))
-
 }

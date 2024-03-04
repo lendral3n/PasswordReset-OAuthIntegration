@@ -143,18 +143,22 @@ func (repo *userQuery) VerifyEmailLink(userId int, verification bool) error {
 	return nil
 }
 
-// RequestCode implements user.UserDataInterface.
+// CreateCode implements user.UserDataInterface.
 func (repo *userQuery) CreateCode(email, code string) error {
 	ctx := context.Background()
-	err := repo.redis.Set(ctx, email, code)
+	
+	err := repo.redis.Delete(ctx, email)
+	if err != nil {
+		return err
+	}
+	
+	err = repo.redis.Set(ctx, email, code)
 	return err
 }
 
 // CheckCode implements user.UserDataInterface.
 func (repo *userQuery) CheckCode(email string) (bool, error) {
 	ctx := context.Background()
-
-	// Mengambil nilai kode dari Redis berdasarkan email
 	_, err := repo.redis.Get(ctx, email)
 	if err != nil {
 		if err == redis.Nil {

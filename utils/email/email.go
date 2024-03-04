@@ -29,7 +29,7 @@ type emailService struct {
 type EmailInterface interface {
 	SendResetPasswordLink(user *user.Core, token string) error
 	SendVerificationLink(user *user.Core, token string) error
-	SendCodeReset(user *user.Core, code string) error 
+	SendCodeResetPassword(user *user.Core, code string) error 
 }
 
 func New() EmailInterface {
@@ -117,7 +117,7 @@ func (e *emailService) SendVerificationLink(user *user.Core, token string) error
 	return nil
 }
 
-func (e *emailService) SendCodeReset(user *user.Core, code string) error {
+func (e *emailService) SendCodeResetPassword(user *user.Core, code string) error {
 	t, err := template.ParseGlob("utils/templates/resetpasswordcode.html")
 	if err != nil {
 		return err

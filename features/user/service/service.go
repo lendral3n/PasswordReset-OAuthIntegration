@@ -194,7 +194,7 @@ func (service *userService) RequestCode(email string, code string) (data *user.C
 		service.m.Store(email, time.Now())
 		return mail, nil
 	}
-	return nil, errors.New("coba lagi dalam beberapa menit lagi")
+	return nil, errors.New("coba lagi")
 }
 
 // ResetPasswordCode implements user.UserServiceInterface.
