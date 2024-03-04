@@ -183,6 +183,12 @@ func (service *userService) RequestCode(email string, code string) (data *user.C
 			if elapsed < 1*time.Minute {
 				remaining := 1*time.Minute - elapsed
 				return nil, fmt.Errorf("coba lagi minta kode dalam %.0f detik", remaining.Seconds())
+			} else {
+				err := service.userData.DeleteCode(email)
+				if err != nil {
+					return nil, err
+				}
+				isValid = false
 			}
 		}
 	}
@@ -192,17 +198,37 @@ func (service *userService) RequestCode(email string, code string) (data *user.C
 			return nil, err
 		}
 		service.m.Store(email, time.Now())
-		return mail, nil
 	}
-	return nil, errors.New("coba lagi dalam beberapa menit lagi")
+	return mail, nil
 }
 
 // ResetPasswordCode implements user.UserServiceInterface.
-func (*userService) ResetPasswordCode(newPassword string) error {
-	panic("unimplemented")
+func (service *userService) ResetPasswordCode(email, newPassword, code string) error {
+	err := service.userData.VerifyCode(email, code)
+	if err != nil {
+		return err
+	}
+
+	err = service.userData.ResetPasswordCode(email, newPassword)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // VerifyEmailCode implements user.UserServiceInterface.
-func (*userService) VerifyEmailCode(email string, code string) error {
-	panic("unimplemented")
+func (service *userService) VerifyEmailCode(email, code string) error {
+	err := service.userData.VerifyCode(email, code)
+	if err != nil {
+		return err
+	}
+
+	verification := true
+
+	err = service.userData.VerifyEmailCode(email, verification)
+	if err != nil {
+		return err
+	}
+	return nil
 }
