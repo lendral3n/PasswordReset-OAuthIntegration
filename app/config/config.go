@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -14,6 +15,10 @@ var (
 	AWS_ACCESS_KEY_ID     string
 	AWS_SECRET_ACCESS_KEY string
 	AWS_REGION            string
+	CLIENT_ID             string
+	CLIENT_SECRET         string
+	GOOGLE_URL            string
+	SCOPES                []string
 )
 
 type AppConfig struct {
@@ -27,7 +32,7 @@ type AppConfig struct {
 	SMTP_USER   string
 	SMTP_PASS   string
 	PASSWD_URL  string
-	EMAIL_FROM string
+	EMAIL_FROM  string
 }
 
 func InitConfig() *AppConfig {
@@ -104,6 +109,22 @@ func ReadEnv() *AppConfig {
 		app.EMAIL_FROM = val
 		isRead = false
 	}
+	if val, found := os.LookupEnv("CLIENTID"); found {
+		CLIENT_ID = val
+		isRead = false
+	}
+	if val, found := os.LookupEnv("CLIENTSECRET"); found {
+		CLIENT_SECRET = val
+		isRead = false
+	}
+	if val, found := os.LookupEnv("GOOGLEURL"); found {
+		GOOGLE_URL = val
+		isRead = false
+	}
+	if val, found := os.LookupEnv("SCOPES"); found {
+		SCOPES = strings.Split(val, ",")
+		isRead = false
+	}
 
 	if isRead {
 		viper.AddConfigPath(".")
@@ -115,7 +136,10 @@ func ReadEnv() *AppConfig {
 			log.Println("error read config : ", err.Error())
 			return nil
 		}
-
+		SCOPES = strings.Split(viper.GetString("SCOPES"), ",")
+		GOOGLE_URL = viper.GetString("GOOGLEURL")
+		CLIENT_ID = viper.GetString("CLIENTID")
+		CLIENT_SECRET = viper.GetString("CLIENTSECRET")
 		AWS_ACCESS_KEY_ID = viper.GetString("AWSKEY")
 		AWS_SECRET_ACCESS_KEY = viper.GetString("AWSSECRET")
 		AWS_REGION = viper.GetString("AWSREGION")

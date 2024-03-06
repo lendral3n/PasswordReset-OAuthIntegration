@@ -4,6 +4,7 @@ import (
 	"emailnotifl3n/features/user"
 	"emailnotifl3n/utils/email"
 	"emailnotifl3n/utils/middlewares"
+	"emailnotifl3n/utils/oauth"
 	"emailnotifl3n/utils/responses"
 	"emailnotifl3n/utils/upload"
 	"net/http"
@@ -15,13 +16,15 @@ type UserHandler struct {
 	userService user.UserServiceInterface
 	s3          upload.S3UploaderInterface
 	email       email.EmailInterface
+	oauthGoogle oauth.GoogleInterface
 }
 
-func New(service user.UserServiceInterface, s3Uploader upload.S3UploaderInterface, email email.EmailInterface) *UserHandler {
+func New(service user.UserServiceInterface, s3Uploader upload.S3UploaderInterface, email email.EmailInterface, google oauth.GoogleInterface) *UserHandler {
 	return &UserHandler{
 		userService: service,
 		s3:          s3Uploader,
 		email:       email,
+		oauthGoogle: google,
 	}
 }
 
@@ -215,6 +218,7 @@ func (handler *UserHandler) RequestCodePassword(c echo.Context) error {
 	if errBind != nil {
 		return c.JSON(http.StatusBadRequest, responses.WebResponse("error bind data, data not valid", nil))
 	}
+	
 
 	userCore := CoderequestToCore(reqData)
 	user, err := handler.userService.RequestCode(userCore.Email, userCore.Code)
@@ -286,3 +290,30 @@ func (handler *UserHandler) VerifyEmailCode(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, responses.WebResponse("success verification email", nil))
 }
+
+func (handler *UserHandler) GoogleLoginRedirect(c echo.Context) error {
+    url := handler.oauthGoogle.GetAuthURL()
+    return c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+func (handler *UserHandler) RegisterWithGoogle(c echo.Context) error {
+	code := c.QueryParam("code")
+
+	googleOauthToken, err := handler.oauthGoogle.GetGoogleOauthToken(code)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error getting Google OAuth token: "+err.Error(), nil))
+	}
+
+	googleUser, err := handler.oauthGoogle.GetGoogleUser(googleOauthToken.Access_token, googleOauthToken.Id_token)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error getting Google user: "+err.Error(), nil))
+	}
+
+	errInsert := handler.userService.RegisterGoogle(*googleUser)
+	if errInsert != nil {
+		return c.JSON(http.StatusBadRequest, responses.WebResponse("error insert data. "+errInsert.Error(), nil))
+	}
+
+	return c.JSON(http.StatusOK, responses.WebResponse("success register user", googleUser))
+}
+

@@ -8,6 +8,7 @@ import (
 	"emailnotifl3n/utils/email"
 	"emailnotifl3n/utils/encrypts"
 	"emailnotifl3n/utils/middlewares"
+	"emailnotifl3n/utils/oauth"
 	"emailnotifl3n/utils/upload"
 
 	"github.com/labstack/echo/v4"
@@ -18,10 +19,11 @@ func InitRouter(db *gorm.DB, e *echo.Echo, rds cache.Redis) {
 	hash := encrypts.New()
 	s3Uploader := upload.New()
 	email := email.New()
+	oauthGoogle := oauth.New()
 
 	userData := ud.New(db, rds)
 	userService := us.New(userData, hash)
-	userHandlerAPI := uh.New(userService, s3Uploader, email)
+	userHandlerAPI := uh.New(userService, s3Uploader, email, oauthGoogle)
 
 	// define routes/ endpoint USER
 	e.POST("/login", userHandlerAPI.Login)
@@ -38,4 +40,16 @@ func InitRouter(db *gorm.DB, e *echo.Echo, rds cache.Redis) {
 	e.PATCH("reset-password-code", userHandlerAPI.ResetPasswordCode)
 	e.POST("request-code-verify", userHandlerAPI.RequestCodeVerify)
 	e.PATCH("verification-email", userHandlerAPI.VerifyEmailCode)
+	e.GET("/oauth-google", userHandlerAPI.GoogleLoginRedirect)
+	e.GET("/api/sessions/oauth/google", userHandlerAPI.RegisterWithGoogle)
 }
+
+
+// LIST PERTANYAAN
+// TIPS HACKERANK APA SAJA YANG HARUS DIPERHATIKAN DAN DICATAT
+// LUPA SANDI -> HTML NYA DARI BE ATAU FE
+// VERIF EMAIL CALLBACK ATAU TIDAK
+// OTP NOMOR HP
+// OAUTH GOOGLE
+// SARAN MEMPELAJARI BAHASA BARU
+// ROASTING KODE
