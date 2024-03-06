@@ -4,7 +4,8 @@ import (
 	"emailnotifl3n/features/user"
 	"emailnotifl3n/utils/email"
 	"emailnotifl3n/utils/middlewares"
-	"emailnotifl3n/utils/oauth"
+	oauthfacebook "emailnotifl3n/utils/oauthFacebook"
+	"emailnotifl3n/utils/oauthGoogle"
 	"emailnotifl3n/utils/responses"
 	"emailnotifl3n/utils/upload"
 	"net/http"
@@ -16,15 +17,17 @@ type UserHandler struct {
 	userService user.UserServiceInterface
 	s3          upload.S3UploaderInterface
 	email       email.EmailInterface
-	oauthGoogle oauth.GoogleInterface
+	oauthGoogle oauthGoogle.GoogleInterface
+	oauthFB     oauthfacebook.FacebookInterface
 }
 
-func New(service user.UserServiceInterface, s3Uploader upload.S3UploaderInterface, email email.EmailInterface, google oauth.GoogleInterface) *UserHandler {
+func New(service user.UserServiceInterface, s3Uploader upload.S3UploaderInterface, email email.EmailInterface, google oauthGoogle.GoogleInterface, fb oauthfacebook.FacebookInterface) *UserHandler {
 	return &UserHandler{
 		userService: service,
 		s3:          s3Uploader,
 		email:       email,
 		oauthGoogle: google,
+		oauthFB:     fb,
 	}
 }
 
@@ -218,7 +221,6 @@ func (handler *UserHandler) RequestCodePassword(c echo.Context) error {
 	if errBind != nil {
 		return c.JSON(http.StatusBadRequest, responses.WebResponse("error bind data, data not valid", nil))
 	}
-	
 
 	userCore := CoderequestToCore(reqData)
 	user, err := handler.userService.RequestCode(userCore.Email, userCore.Code)
@@ -292,8 +294,8 @@ func (handler *UserHandler) VerifyEmailCode(c echo.Context) error {
 }
 
 func (handler *UserHandler) GoogleLoginRedirect(c echo.Context) error {
-    url := handler.oauthGoogle.GetAuthURL()
-    return c.Redirect(http.StatusTemporaryRedirect, url)
+	url := handler.oauthGoogle.GetAuthURL()
+	return c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
 func (handler *UserHandler) RegisterWithGoogle(c echo.Context) error {
@@ -317,3 +319,28 @@ func (handler *UserHandler) RegisterWithGoogle(c echo.Context) error {
 	return c.JSON(http.StatusOK, responses.WebResponse("success register user", googleUser))
 }
 
+func (handler *UserHandler) FacebookRedirect(c echo.Context) error {
+	url := handler.oauthFB.GetAuthURL()
+	return c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+func (handler *UserHandler) RegisterWithFacebook(c echo.Context) error {
+	code := c.QueryParam("code")
+
+	fbOauthToken, err := handler.oauthFB.GetFacebookOauthToken(code)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error getting fb OAuth token: "+err.Error(), nil))
+	}
+
+	fbUser, err := handler.oauthFB.GetFacebookUser(fbOauthToken.Access_token)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, responses.WebResponse("error getting fb user: "+err.Error(), nil))
+	}
+
+	errInsert := handler.userService.RegisterGoogle(*fbUser)
+	if errInsert != nil {
+		return c.JSON(http.StatusBadRequest, responses.WebResponse("error insert data. "+errInsert.Error(), nil))
+	}
+
+	return c.JSON(http.StatusOK, responses.WebResponse("success register user", fbUser))
+}

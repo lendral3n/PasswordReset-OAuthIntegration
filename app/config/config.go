@@ -19,6 +19,10 @@ var (
 	CLIENT_SECRET         string
 	GOOGLE_URL            string
 	SCOPES                []string
+	CLIENT_ID_FB          string
+	CLIENT_SECRET_FB      string
+	FB_URL                string
+	SCOPES_FB             []string
 )
 
 type AppConfig struct {
@@ -125,6 +129,22 @@ func ReadEnv() *AppConfig {
 		SCOPES = strings.Split(val, ",")
 		isRead = false
 	}
+	if val, found := os.LookupEnv("CLIENTIDFB"); found {
+		CLIENT_ID_FB = val
+		isRead = false
+	}
+	if val, found := os.LookupEnv("CLIENTSECRETFB"); found {
+		CLIENT_SECRET_FB = val
+		isRead = false
+	}
+	if val, found := os.LookupEnv("FBURL"); found {
+		FB_URL = val
+		isRead = false
+	}
+	if val, found := os.LookupEnv("SCOPESFB"); found {
+		SCOPES_FB = strings.Split(val, ",")
+		isRead = false
+	}
 
 	if isRead {
 		viper.AddConfigPath(".")
@@ -136,6 +156,10 @@ func ReadEnv() *AppConfig {
 			log.Println("error read config : ", err.Error())
 			return nil
 		}
+		SCOPES_FB = strings.Split(viper.GetString("SCOPESFB"), ",")
+		FB_URL = viper.GetString("FBURL")
+		CLIENT_ID_FB = viper.GetString("CLIENTIDFB")
+		CLIENT_SECRET_FB = viper.GetString("CLIENTSECRETFB")
 		SCOPES = strings.Split(viper.GetString("SCOPES"), ",")
 		GOOGLE_URL = viper.GetString("GOOGLEURL")
 		CLIENT_ID = viper.GetString("CLIENTID")

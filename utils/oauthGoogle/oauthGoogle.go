@@ -1,4 +1,4 @@
-package oauth
+package oauthGoogle
 
 import (
 	"bytes"
@@ -37,7 +37,7 @@ func New() GoogleInterface {
 			RedirectURL:  config.GOOGLE_URL,
 			ClientID:     config.CLIENT_ID,
 			ClientSecret: config.CLIENT_SECRET,
-			Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
+			Scopes:       config.SCOPES,
 			Endpoint:     google.Endpoint,
 		},
 	}
