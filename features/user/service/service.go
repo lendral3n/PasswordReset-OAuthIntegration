@@ -232,3 +232,22 @@ func (service *userService) VerifyEmailCode(email, code string) error {
 	}
 	return nil
 }
+
+// SelectByEmail implements user.UserServiceInterface.
+func (service *userService) SelectByEmail(email string) (*user.Core, error) {
+	user, err := service.userData.SelectByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+// RegisterGoogle implements user.UserServiceInterface.
+func (service *userService) RegisterGoogle(input user.Core) error {
+	err := service.userData.Insert(input)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -11,6 +11,7 @@ type Core struct {
 	Password     string `validate:"required"`
 	PhotoProfile string
 	Verified     bool
+	RegistrationType string
 	Code string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -52,7 +53,9 @@ type UserServiceInterface interface {
 	ForgotPassword(email string) (data *Core, token string, err error)
 	ResetPassword(userId int, newPassword string) error
 	VerifyEmailLink(userId int) error
+	SelectByEmail(email string) (*Core, error)
 	RequestCode(email, code string) (data *Core, err error)
 	VerifyEmailCode(email string, code string) error
 	ResetPasswordCode(email, newPassword, code string) error
+	RegisterGoogle(input Core) error
 }

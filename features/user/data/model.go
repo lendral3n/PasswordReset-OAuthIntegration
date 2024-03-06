@@ -9,19 +9,22 @@ import (
 // struct user gorm model
 type User struct {
 	gorm.Model
-	Name         string `gorm:"not null"`
-	Email        string `gorm:"unique"`
-	Password     string `gorm:"not null"`
-	PhotoProfile string
-	Verified     bool
+	Name             string `gorm:"not null"`
+	Email            string `gorm:"unique"`
+	Password         string `gorm:"not null"`
+	PhotoProfile     string
+	Verified         bool
+	RegistrationType string
 }
 
 func CoreToModel(input user.Core) User {
 	return User{
-		Name:         input.Name,
-		Email:        input.Email,
-		Password:     input.Password,
-		PhotoProfile: input.PhotoProfile,
+		Name:             input.Name,
+		Email:            input.Email,
+		Password:         input.Password,
+		PhotoProfile:     input.PhotoProfile,
+		Verified:         input.Verified,
+		RegistrationType: input.RegistrationType,
 	}
 }
 

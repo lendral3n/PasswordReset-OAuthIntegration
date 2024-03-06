@@ -46,10 +46,12 @@ type CodeRequest struct {
 
 func RequestToCore(input UserRequest) user.Core {
 	return user.Core{
-		Name:         input.Name,
-		Email:        input.Email,
-		Password:     input.Password,
-		PhotoProfile: input.PhotoProfile,
+		Name:             input.Name,
+		Email:            input.Email,
+		Password:         input.Password,
+		PhotoProfile:     input.PhotoProfile,
+		Verified:         false,
+		RegistrationType: "email",
 	}
 }
 

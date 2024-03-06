@@ -28,6 +28,26 @@ func CreateTokenLogin(userId int) (string, error) {
 	return token.SignedString([]byte(config.JWT_SECRET))
 }
 
+// extract token jwt
+func ExtractTokenUserId(e echo.Context) int {
+	header := e.Request().Header.Get("Authorization")
+	headerToken := strings.Split(header, " ")
+	token := headerToken[len(headerToken)-1]
+	tokenJWT, _ := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		return []byte(config.JWT_SECRET), nil
+	})
+
+	if tokenJWT.Valid {
+		claims := tokenJWT.Claims.(jwt.MapClaims)
+		userId, isValidUserId := claims["userId"].(float64)
+		if !isValidUserId {
+			return 0
+		}
+		return int(userId)
+	}
+	return 0
+}
+
 func CreateResetPasswordToken(userId int) (string, error) {
 	payload := map[string]interface{}{
 		"userId":        userId,
@@ -49,26 +69,6 @@ func CreateResetPasswordToken(userId int) (string, error) {
 	}
 
 	return token, nil
-}
-
-// extract token jwt
-func ExtractTokenUserId(e echo.Context) int {
-	header := e.Request().Header.Get("Authorization")
-	headerToken := strings.Split(header, " ")
-	token := headerToken[len(headerToken)-1]
-	tokenJWT, _ := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-		return []byte(config.JWT_SECRET), nil
-	})
-
-	if tokenJWT.Valid {
-		claims := tokenJWT.Claims.(jwt.MapClaims)
-		userId, isValidUserId := claims["userId"].(float64)
-		if !isValidUserId {
-			return 0
-		}
-		return int(userId)
-	}
-	return 0
 }
 
 func ExtractUserIdFromResetPasswordToken(token string) (int, error) {
