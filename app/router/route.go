@@ -46,5 +46,4 @@ func InitRouter(db *gorm.DB, e *echo.Echo, rds cache.Redis) {
 	e.GET("/api/sessions/oauth/google", userHandlerAPI.RegisterWithGoogle)
 	e.GET("/oauth-facebook", userHandlerAPI.FacebookRedirect)
 	e.GET("/id/oauth/callback/", userHandlerAPI.RegisterWithFacebook)
-
 }
